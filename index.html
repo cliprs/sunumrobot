@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>XAU/USD Algoritmik Likidite Yönetimi | Stratejik Sunum</title>
+
+    <!-- Detect mobile BEFORE any CSS loads -->
+    <script>
+        if (window.innerWidth <= 768) {
+            document.documentElement.classList.add('is-mobile');
+        }
+    </script>
+
+    <!-- Reveal CSS only for desktop -->
+    <script>
+        if (!document.documentElement.classList.contains('is-mobile')) {
+            ['https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reset.min.css',
+             'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.min.css',
+             'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/theme/black.min.css'
+            ].forEach(href => {
+                var l = document.createElement('link');
+                l.rel = 'stylesheet'; l.href = href;
+                document.head.appendChild(l);
+            });
+        }
+    </script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@100;300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --gold: #FFD700;
+            --highlight-color: #FFEA00;
+            --bg-dark: #020406;
+            --line-pos: 80px;
+            --safe-padding: 150px;
+        }
+
+        /* ============================================================
+           DESKTOP STYLES (default)
+        ============================================================ */
+        body { background-color: var(--bg-dark); margin: 0; overflow: hidden; }
+        .reveal { font-family: 'Sora', sans-serif; color: #fff; }
+
+        .side-bar {
+            position: fixed; left: var(--line-pos); top: 0; width: 2px; height: 100%;
+            background: linear-gradient(to bottom, transparent, var(--gold), transparent); box-shadow: 0 0 30px rgba(255, 215, 0, 0.5); z-index: 1001;
+        }
+        .dot-nav {
+            position: fixed; right: 50px; bottom: 80px;
+            display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 2000;
+        }
+        .dot-line-bg { position: absolute; top: 5px; bottom: 5px; width: 1px; background: rgba(255,255,255,0.1); z-index: -1; }
+        .dot-line-progress { position: absolute; top: 5px; width: 2px; background: var(--gold); z-index: -1; transition: height 0.6s ease; height: 0%; box-shadow: 0 0 15px var(--gold); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: #1a1a1a; border: 1px solid rgba(255,255,255,0.3); transition: all 0.4s ease; cursor: pointer; }
+        .dot.active { background: var(--gold); box-shadow: 0 0 20px var(--gold); transform: scale(1.4); border-color: var(--gold); }
+        .dot.passed { background: var(--gold); border-color: var(--gold); }
+
+        .slide-internal-header {
+            width: 100%; padding-bottom: 25px;
+            position: relative; display: flex; align-items: center; justify-content: space-between; margin-bottom: 50px;
+        }
+        .slide-internal-header::after {
+            content: ''; position: absolute; bottom: 0; left: -5000px; right: -5000px;
+            height: 1px; background: linear-gradient(to right, transparent, rgba(255, 215, 0, 0.4), transparent);
+        }
+        .slide-internal-header .title-label { color: var(--gold); font-size: 20px; letter-spacing: 8px; text-transform: uppercase; font-weight: 200; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+        .slide-internal-header .brand-meta { font-size: 11px; letter-spacing: 4px; opacity: 0.6; font-weight: 600; color: var(--gold); }
+
+        .reveal .slides section {
+            padding: 60px var(--safe-padding) !important;
+            box-sizing: border-box; text-align: left; overflow: visible !important;
+        }
+        .content-grid { display: grid; grid-template-columns: 0.8fr 1.2fr; height: auto; align-items: flex-start; gap: 0; }
+        .title-area h1 { font-size: 85px !important; font-weight: 800 !important; line-height: 1.1 !important; margin: 0 !important; letter-spacing: -4px !important; text-transform: uppercase; white-space: normal; }
+        .gradient-text { background: linear-gradient(135deg, #FFFFFF 0%, #FFD700 35%, #FFD700 65%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.2)); }
+        .description { margin: 40px 0 60px 0; font-size: 24px; opacity: 0.8; max-width: 850px; font-weight: 300; line-height: 1.8; letter-spacing: 0.5px; }
+        .highlight { color: var(--gold); font-weight: 600; text-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+
+        .vertical-nav { display: flex; flex-direction: column; gap: 15px; max-width: 320px; }
+        .v-nav-item { display: flex; align-items: center; gap: 20px; cursor: pointer; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); opacity: 0.3; transition: all 0.3s ease; }
+        .v-nav-item:hover { opacity: 0.8; padding-left: 10px; }
+        .v-nav-item.active { opacity: 1; border-bottom: 1px solid var(--gold); }
+        .v-num { font-size: 10px; color: var(--gold); font-weight: 800; border: 1px solid var(--gold); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .v-nav-item h4 { margin: 0 !important; font-size: 16px !important; letter-spacing: 3px !important; text-transform: uppercase !important; font-weight: 300 !important; color: #fff; }
+        .v-nav-item.active h4 { font-weight: 700 !important; color: var(--gold); }
+
+        .detail-panel {
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+            clip-path: polygon(20% 0%, 100% 0%, 100% 100%, 10% 100%);
+            border-radius: 0 24px 24px 0; margin-left: -120px; padding: 60px 60px 60px 240px;
+            min-height: 480px; opacity: 0; transform: translateY(10px);
+            transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
+            position: relative; overflow: hidden;
+        }
+        
+        /* Sideways Chart Visual (SVG) */
+        .sideways-chart {
+            position: absolute; bottom: -10px; left: 0; width: 100%;
+            height: 180px; display: flex; align-items: flex-end;
+            opacity: 0.2; pointer-events: none; z-index: 0;
+            overflow: hidden;
+        }
+        .sideways-chart img {
+            width: 100%; height: 100%; object-fit: contain;
+            object-position: right bottom;
+            filter: brightness(1.3) contrast(1.1);
+            mix-blend-mode: screen;
+        }
+        
+        .dollar-icon {
+            height: 220px;
+            width: auto;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+            margin-left: 30px;
+            object-fit: contain;
+            transform: translateY(-20px);
+        }
+        .final-title-wrap { display: flex; align-items: center; }
+
+        .detail-panel.active .candle { opacity: 1; }
+        .detail-panel.active { opacity: 1; transform: translateY(0); }
+        .detail-item { display: none; }
+        .detail-item.active { display: block; animation: fadeIn 0.4s ease; }
+        .detail-item h3 { color: var(--gold); font-size: 30px !important; margin-bottom: 15px !important; font-weight: 700 !important; }
+        .detail-item .item-intro { font-size: 22px; line-height: 1.6; opacity: 0.8; font-weight: 300; margin-bottom: 30px; display: block; }
+        .sub-features { display: flex; flex-direction: column; gap: 20px; }
+        .sub-box {
+            position: relative;
+            border-left: 2px solid rgba(197, 160, 89, 0.2);
+            padding-left: 25px;
+            margin-left: 40px;
+            transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+            cursor: pointer;
+        }
+        .sub-box:hover {
+            border-left-color: var(--gold);
+            padding-left: 35px;
+            background: rgba(197, 160, 89, 0.05);
+        }
+        .step-label { position: absolute; left: -20px; top: 0; writing-mode: vertical-rl; transform: rotate(180deg); color: var(--gold); font-size: 10px; letter-spacing: 2px; font-weight: 800; opacity: 0.6; white-space: nowrap; }
+        .sub-box h5 { color: var(--highlight-color); font-size: 22px !important; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px !important; font-weight: 700 !important; }
+        .sub-box p { font-size: 20px; line-height: 1.5; opacity: 0.6; margin: 0; font-weight: 300; }
+
+        .bg-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.1; }
+        .bg-layer img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%); }
+
+        /* ============================================================
+           MOBILE STYLES
+        ============================================================ */
+        html.is-mobile {
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            height: 100%;
+        }
+        html.is-mobile body {
+            overflow: visible;
+            height: auto;
+            font-family: 'Sora', sans-serif;
+            background: var(--bg-dark);
+            color: #fff;
+        }
+
+        /* Tüm Reveal wrapper'larını sıfırla */
+        html.is-mobile .reveal,
+        html.is-mobile .reveal .slides {
+            all: unset;
+            display: block;
+            width: 100%;
+        }
+
+        /* Her slide tam ekran snap */
+        html.is-mobile .reveal .slides > section {
+            all: unset;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            height: 100dvh !important;
+            box-sizing: border-box !important;
+            padding: 44px 18px 16px 18px !important;
+            scroll-snap-align: start !important;
+            scroll-snap-stop: always !important;
+            overflow: hidden !important;
+            position: relative !important;
+            background: var(--bg-dark) !important;
+            justify-content: flex-start !important;
+        }
+
+        html.is-mobile .side-bar,
+        html.is-mobile .dot-nav { display: none !important; }
+
+        html.is-mobile .slide-internal-header {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(197,160,89,0.2);
+            width: 100%;
+            position: relative;
+        }
+        html.is-mobile .slide-internal-header::after { display: none; }
+        html.is-mobile .slide-internal-header .title-label { color: var(--gold); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; font-weight: 200; }
+        html.is-mobile .slide-internal-header .brand-meta { font-size: 9px; letter-spacing: 2px; opacity: 0.4; font-weight: 600; }
+
+        html.is-mobile .content-grid {
+            display: flex !important;
+            flex-direction: column !important;
+            grid-template-columns: unset !important;
+            flex: 1 !important;
+            min-height: 0 !important;
+            gap: 0 !important;
+            width: 100% !important;
+        }
+
+        html.is-mobile .title-area {
+            flex-shrink: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-bottom: 10px !important;
+        }
+        html.is-mobile .title-area h1 {
+            font-size: 30px !important;
+            font-weight: 800 !important;
+            white-space: normal !important;
+            line-height: 1.1 !important;
+            letter-spacing: -1px !important;
+            margin: 0 0 6px 0 !important;
+            text-transform: uppercase;
+        }
+        html.is-mobile .description {
+            font-size: 12px !important;
+            margin: 5px 0 8px 0 !important;
+            line-height: 1.55;
+            opacity: 0.7;
+            font-weight: 300;
+            max-width: 100% !important;
+        }
+        html.is-mobile .gradient-text {
+            background: linear-gradient(to right, #fff 20%, var(--gold) 70%, #A67C37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Tab navigasyon — 2 sütun grid */
+        html.is-mobile .vertical-nav {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            flex-shrink: 0;
+            max-width: 100%;
+        }
+        html.is-mobile .vertical-nav .v-nav-item:first-child:nth-last-child(3) ~ .v-nav-item:nth-child(3) {
+            grid-column: 1 / -1;
+        }
+        html.is-mobile .v-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 9px 12px;
+            border: 1px solid rgba(197,160,89,0.3);
+            border-radius: 8px;
+            opacity: 0.55;
+            background: rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        html.is-mobile .v-nav-item.active {
+            opacity: 1;
+            border-color: var(--gold);
+            background: rgba(197,160,89,0.12);
+        }
+        html.is-mobile .v-num {
+            font-size: 8px; color: var(--gold); font-weight: 800;
+            border: 1px solid var(--gold); width: 17px; height: 17px;
+            display: flex; align-items: center; justify-content: center; border-radius: 50%;
+            flex-shrink: 0;
+        }
+        html.is-mobile .v-nav-item h4 {
+            margin: 0 !important;
+            font-size: 11px !important;
+            letter-spacing: 0.3px !important;
+            text-transform: uppercase !important;
+            font-weight: 300 !important;
+            color: #fff;
+            line-height: 1.3;
+        }
+        html.is-mobile .v-nav-item.active h4 { font-weight: 700 !important; color: var(--gold); }
+
+        html.is-mobile .detail-area {
+            flex-shrink: 0 !important;
+            width: 100% !important;
+            margin-top: 8px !important;
+            overflow: visible !important;
+        }
+        html.is-mobile .detail-panel {
+            all: unset;
+            display: block;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 12px 13px;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        html.is-mobile .detail-item { display: none; }
+        html.is-mobile .detail-item.active { display: block; }
+        html.is-mobile .detail-item h3 { color: var(--gold); font-size: 15px !important; margin: 0 0 4px 0 !important; font-weight: 700 !important; }
+        html.is-mobile .detail-item .item-intro { font-size: 11px; line-height: 1.45; opacity: 0.8; font-weight: 300; margin-bottom: 8px; display: block; }
+        html.is-mobile .sub-features { display: flex; flex-direction: column; gap: 6px; }
+        html.is-mobile .sub-box { position: relative; border-left: 2px solid rgba(197,160,89,0.5); padding-left: 10px; margin-left: 0; }
+        html.is-mobile .step-label { display: none; }
+        html.is-mobile .sub-box h5 { color: var(--highlight-color); font-size: 14px !important; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 1px !important; font-weight: 700 !important; }
+        html.is-mobile .sub-box p { font-size: 13px; line-height: 1.4; opacity: 0.6; margin: 0; font-weight: 300; }
+        .gear-icon, .simsek-icon, .dollar-icon-new {
+            height: 200px; width: auto; margin-left: 30px;
+            filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.5));
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .title-wrap, .final-title-wrap { display: flex; align-items: center; }
+        .gradient-text { width: 650px; display: inline-block; }
+        .desktop-only { display: block; }
+        .mobile-only { display: none; }
+
+        html.is-mobile .desktop-only { display: none !important; }
+        html.is-mobile .mobile-only { display: block !important; }
+        html.is-mobile .gradient-text { width: auto; display: block; }
+        html.is-mobile .gear-icon, 
+        html.is-mobile .simsek-icon { 
+            height: 55px !important; 
+            width: auto !important; 
+            margin-left: 10px !important; 
+            margin-right: 0 !important;
+            transform: none !important; 
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3)) !important; 
+        }
+        html.is-mobile .dollar-icon-new {
+            height: 55px !important; 
+            width: auto !important; 
+            margin-left: auto !important; /* Doları en sağa iter */
+            transform: none !important; 
+            filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.3)) !important; 
+        }
+        /* Slide 5 ve 6 için özel sağa yaslama */
+        html.is-mobile section:nth-of-type(5) .title-wrap,
+        html.is-mobile .final-title-wrap { display: flex; align-items: center; width: 100%; justify-content: space-between; }
+        html.is-mobile section:nth-of-type(5) .gear-icon { margin-left: auto !important; }
+        
+        html.is-mobile .sideways-chart { height: 220px; bottom: 60px; opacity: 0.25; }
+        html.is-mobile .sideways-chart img { object-position: center bottom; transform: scale(1.5); transform-origin: center bottom; }
+        html.is-mobile .final-title-wrap { display: flex; align-items: center; }
+        html.is-mobile .highlight { color: var(--highlight-color); font-weight: 600; }
+        html.is-mobile .bg-layer { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="side-bar"></div>
+    <div class="bg-layer"><img src="https://images.unsplash.com/photo-1610375461246-83df859d849d?auto=format&fit=crop&q=80&w=2232"></div>
+
+    <div class="dot-nav" id="dot-nav">
+        <div class="dot-line-bg"></div>
+        <div class="dot-line-progress" id="dot-progress"></div>
+    </div>
+
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- SLIDE 1: VİZYON VE OTORİTE -->
+            <section data-transition="fade">
+                <div class="slide-internal-header">
+                    <div class="title-label">Akıllı Altın Yönetimi</div>
+                    <div class="brand-meta">HIZLI. DİSİPLİNLİ. TUTARLI.</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="title-wrap">
+                            <h1 class="gradient-text">AKILLI ALTIN ROBOTU</h1>
+                            <!-- Inline Modern Stroke Gear Icon -->
+                            <svg class="gear-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M19.4 15L21.4 13.5C21.6 13.3 21.7 13.1 21.6 12.9L20.6 11.1C20.5 10.9 20.3 10.8 20.1 10.9L17.8 11.6C17.3 11.2 16.8 10.9 16.2 10.7L15.7 8.3C15.7 8.1 15.5 8 15.3 8H13.3C13.1 8 12.9 8.1 12.9 8.3L12.4 10.7C11.8 10.9 11.3 11.2 10.8 11.6L8.5 10.9C8.3 10.8 8.1 10.9 8 11.1L7 12.9C6.9 13.1 7 13.3 7.2 13.5L9.2 15C9.1 15.3 9.1 15.7 9.1 16C9.1 16.3 9.1 16.7 9.2 17L7.2 18.5C7 18.7 6.9 18.9 7 19.1L8 20.9C8.1 21.1 8.3 21.2 8.5 21.1L10.8 20.4C11.3 20.8 11.8 21.1 12.4 21.3L12.9 23.7C12.9 23.9 13.1 24 13.3 24H15.3C15.5 24 15.7 23.9 15.7 23.7L16.2 21.3C16.8 21.1 17.3 20.8 17.8 20.4L20.1 21.1C20.3 21.2 20.5 21.1 20.6 20.9L21.6 19.1C21.7 18.9 21.6 18.7 21.4 18.5L19.4 17C19.5 16.7 19.5 16.3 19.5 16C19.5 15.7 19.5 15.3 19.4 15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Dünya altın piyasasında bir insanın asla yetişemeyeceği hızda alım-satım yapan zeki bir yazılım. Piyasadaki karmaşayı değil, <span class="highlight">saniyelik fırsatları</span> kazanca dönüştürüyor.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('vizyon', this)"><div class="v-num">01</div><h4>Nasıl Çalışır?</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('hiz_vizyon', this)"><div class="v-num">02</div><h4>Yüksek Hız</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('disiplin', this)"><div class="v-num">03</div><h4>Tam Disiplin</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active">
+                            <div id="vizyon" class="detail-item active">
+                                <h3>Zeki Yatırım Mantığı</h3>
+                                <span class="item-intro">Altın fiyatlarındaki dalgalanmanın yönünü "enerji patlamasıyla" tespit eden bir sistem.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Hareket Onayı</h5><p>Geleceği görmez; ancak 1 saniyede 100 puanlık bir sıçrama olduğunda, bu hareketin devam edeceğini milisaniyeler içinde anlar ve işleme girer.</p></div>
+                                    <div class="sub-box"><h5>Veri Analizi</h5><p>Binlerce veriyi saniyeler içinde süzerek sadece kazanma ihtimali en yüksek anları seçer (Faiz oranı kararları, tarım dışı istihdam, enflasyon verileri gibi önemli gelişmeleri takip eder).</p></div>
+                                    <div class="sub-box"><h5>Hızlı Karar</h5><p>Dalga henüz başındayken milisaniyeler içinde işlemi başlatır ve kârı alıp çıkar.</p></div>
+                                </div>
+                            </div>
+                            <div id="hiz_vizyon" class="detail-item">
+                                <h3>Hızın Teknik Üstünlüğü</h3>
+                                <span class="item-intro">Finansal piyasalarda milisaniyeler, binlerce dolarlık fırsatın yakalanması veya kaçırılması arasındaki tek farktır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Milisaniyelik Üstünlük</h5><p>İnsan beyninin bir hareketi algılayıp tepki vermesi yaklaşık 250 milisaniye sürerken, robotumuz bu süreci 1 milisaniyenin altında tamamlar; yani siz daha ne olduğunu anlamadan o işlemi bitirmiş olur.</p></div>
+                                    <div class="sub-box"><h5>Fiyat Kaçırmama Gücü</h5><p>Haber anındaki sert sıçramalarda fiyatlar çok hızlı değişir; robot, hedef fiyatı ekranda gördüğü an milisaniyeler içinde emir ileterek en avantajlı noktadan giriş yapar.</p></div>
+                                    <div class="sub-box"><h5>Anlık Onay ve Giriş</h5><p>Veri merkezlerine doğrudan bağlı altyapısı sayesinde, piyasa onayı ile işlem girişi arasında hiçbir gecikme yaşanmaz; bu da stratejinin başarısını garanti altına alır.</p></div>
+                                </div>
+                            </div>
+                            <div id="disiplin" class="detail-item">
+                                <h3>Robotik Disiplin</h3>
+                                <span class="item-intro">Yatırımcıların en büyük düşmanı olan "duygular", robotumuzun sisteminde yer almaz.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Sıfır Duygusal Hata</h5><p>Robot korkmaz, heyecanlanmaz ve hırsa kapılmaz; piyasa ne kadar kaotik olursa olsun, sadece önceden tanımlanmış matematiksel modele %100 sadık kalır.</p></div>
+                                    <div class="sub-box"><h5>Kesintisiz Gözlem (7/24)</h5><p>İnsan yorulur, uyur ve dikkati dağılır; ancak bu sistem, piyasa açık olduğu her saniye aynı yüksek konsantrasyonla binlerce veriyi analiz etmeye devam eder.</p></div>
+                                    <div class="sub-box"><h5>Matematiksel Sadakat</h5><p>Sistem, piyasada oluşabilecek "belki döner" veya "biraz daha bekleyelim" gibi insani yanılgılara düşmeden, kural neyse onu milisaniyeler içinde hatasız uygular.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 2: ALGORİTMA MANTIĞI -->
+            <section data-transition="fade">
+                <div class="slide-internal-header">
+                    <div class="title-label">Sistemin Çalışma Prensibi</div>
+                    <div class="brand-meta">MİLİSANİYELİK HASSASİYET</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="title-wrap">
+                            <h1 class="gradient-text">NET VE HIZLI KARAR.</h1>
+                            <!-- Inline Modern Stroke Lightning Icon -->
+                            <svg class="simsek-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Robot, saniyeler içinde gerçekleşen sert fiyat hareketlerini yakalar. Manuel bir insanın yapamayacağı kadar <span class="highlight">hassas bir zamanlama</span> ile çalışır.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('filtre', this)"><div class="v-num">01</div><h4>Seçicilik</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('altin_neden', this)"><div class="v-num">02</div><h4>Neden Altın?</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('nokta_atisi', this)"><div class="v-num">03</div><h4>Tam İsabet</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active">
+                            <div id="filtre" class="detail-item active">
+                                <h3>Yüksek Seçicilik</h3>
+                                <span class="item-intro">Robot, piyasadaki binlerce hareketin %99'unu "gürültü" olarak tanımlayıp eler; sadece matematiksel onayı olan en kaliteli fırsata odaklanır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Dikey Hareket Süzgeci</h5><p>Sadece 1 saniyede 100 puanı aşan sert ve kararlı hareketleri işleme değer bulur; yavaş ve zayıf kıpırdanmaları "belirsizlik" olarak görüp devre dışı bırakır.</p></div>
+                                    <div class="sub-box"><h5>Piyasa Şartları Onayı</h5><p>Haber akışı ve hareketlilik (volatilite) eşzamanlı olarak desteklenmiyorsa, fiyat ne kadar sıçrarsa sıçrasın "tuzak" ihtimaline karşı kenarda beklemeyi tercih eder.</p></div>
+                                    <div class="sub-box"><h5>Milisaniyelik Eleme</h5><p>İşleme girme kararını verdiği kadar, "girmeme" kararını da milisaniyeler içinde verir; bu sayede hatalı işlemlerden kaçınarak sermaye verimliliğini korur.</p></div>
+                                </div>
+                            </div>
+                            <div id="altin_neden" class="detail-item">
+                                <h3>Neden Altın (XAU/USD)?</h3>
+                                <span class="item-intro">Altın, hem dünyanın en güvenli limanı hem de robotumuzun ihtiyaç duyduğu en yüksek volatiliteyi sunan eşsiz bir enstrümandır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Küresel Likidite Gücü</h5><p>Dünyanın en likit varlıklarından biri olduğu için, milisaniyeler içinde çok büyük miktarlarda alım-satım yapılmasına imkan tanır; bu da hızlı giriş-çıkış stratejimiz için kusursuzdur.</p></div>
+                                    <div class="sub-box"><h5>Sürekli Hareket Alanı</h5><p>Altın piyasası, haber akışlarına ve ekonomik verilere en hızlı tepki veren piyasadır; robotun kazanç üretmek için ihtiyaç duyduğu "dikey hareketler" en çok bu alanda oluşur.</p></div>
+                                    <div class="sub-box"><h5>Düşük Spread Avantajı</h5><p>İşlem hacminin yüksekliği sayesinde alış-satış farkı (spread) çok dardır; bu da robotun kâra geçme süresini kısaltan en önemli maliyet avantajıdır.</p></div>
+                                </div>
+                            </div>
+                            <div id="nokta_atisi" class="detail-item">
+                                <h3>Tam İsabetli Uygulama</h3>
+                                <span class="item-intro">Robot, manuel bir operatörün asla ulaşamayacağı bir "kusursuz uygulama" disipliniyle çalışır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Sıfır Sapma Prensibi</h5><p>Hedeflenen fiyat görüldüğü milisaniye içinde emir iletilir; manuel işlemlerdeki "geç kalma" veya "fiyat kaçırma" riskleri bu sistemde tamamen ortadan kalkar.</p></div>
+                                    <div class="sub-box"><h5>Hızlı Emir İletimi</h5><p>New York ve Londra'daki veri merkezlerine doğrudan bağlı olması sayesinde, işlemler doğrudan piyasanın kalbine milisaniye altı hızla ulaştırılır.</p></div>
+                                    <div class="sub-box"><h5>Mükemmel Zamanlama</h5><p>Sinyal oluştuğu an girer, hedef kâr noktasına ulaştığı an saniyeler içinde kârı realize edip kenara çekilir; vaktini piyasada risk altında geçirmez.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 3: RİSK YÖNETİMİ -->
+            <section data-transition="fade">
+                <div class="slide-internal-header">
+                    <div class="title-label">Koruma Sistemi</div>
+                    <div class="brand-meta">ÖNCE GÜVENLİK</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="title-wrap">
+                            <h1 class="gradient-text">GÜVENLİ FREN SİSTEMİ.</h1>
+                            <!-- Inline Modern Stroke Shield Icon -->
+                            <svg class="gear-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Robot önce sermayeyi korur, sonra kazandırır. İşlem yaparken her zaman <span class="highlight">otomatik emniyet kurallarını</span> uygular.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('stop_loss', this)"><div class="v-num">01</div><h4>Zarar Sınırı</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('trailing', this)"><div class="v-num">02</div><h4>Kâr Koruma</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('disiplin_risk', this)"><div class="v-num">03</div><h4>Kontrollü Risk</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active">
+                            <div id="stop_loss" class="detail-item active">
+                                <h3>Kesin Zarar Sınırı</h3>
+                                <span class="item-intro">Her işlemin, açıldığı milisaniye ile birlikte tanımlanan aşılmaz bir "koruma kalkanı" vardır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>150 Puan Sabit Stop-Loss</h5><p>Piyasa ne kadar sert hareket ederse etsin, robot bir işlemde 150 puandan fazla zarar edilmesine asla izin vermez ve işlemi o noktada kesin olarak kapatır.</p></div>
+                                    <div class="sub-box"><h5>Sermaye Koruma Kalkanı</h5><p>Beklenmedik piyasa şoklarında veya sert düşüşlerde, bakiyenizin büyük bir kısmını kaybetme riskini tamamen ortadan kaldıran bir emniyet sibobudur.</p></div>
+                                    <div class="sub-box"><h5>Duygusuz Müdahale</h5><p>İnsanların "belki döner" diyerek yaptığı bekleyiş hatasına robot asla düşmez; kural neyse milisaniyeler içinde onu uygular.</p></div>
+                                </div>
+                            </div>
+                            <div id="trailing" class="detail-item">
+                                <h3>Kâr Kilitleme Sistemi</h3>
+                                <span class="item-intro">Robot, piyasa lehimize döndüğü anda kârın buharlaşmasına izin vermeyen "İz Süren Stop" mekanizmasını devreye sokar.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>100 Puan Kâr Eşiği</h5><p>İşlem 100 puan kâra ulaştığı an, robot koruma sistemini otomatik olarak aktif eder ve o işlemdeki zarar olasılığını tamamen sıfırlar.</p></div>
+                                    <div class="sub-box"><h5>İz Süren Takip</h5><p>Fiyat kâr yönünde ilerlemeye devam ettikçe, robot koruma seviyesini de fiyatın peşinden yukarı taşır; böylece kârı sürekli güncelleyerek kilitler.</p></div>
+                                    <div class="sub-box"><h5>Geri Dönüş Koruması</h5><p>Piyasa aniden tersine dönerse, robot önceden kilitlediği en yüksek kâr noktasında işlemi kapatarak kazancın kasada kalmasını sağlar.</p></div>
+                                </div>
+                            </div>
+                            <div id="disiplin_risk" class="detail-item">
+                                <h3>Kontrollü Risk Yönetimi</h3>
+                                <span class="item-intro">Kaldıraç bir risk değil, profesyoneller için bir verimlilik aracıdır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Düşük Hacim Kullanımı</h5><p>10.000$ bakiyeli bir hesapta sadece 0.10 lot gibi çok küçük işlemler açarak risk en başından minimize edilir.</p></div>
+                                    <div class="sub-box"><h5>Bakiyenin Küçük Bir Kısmı</h5><p>İşlem anında 10.000$'lık kasanın sadece 1.000$'ı kullanılır; yani bakiye hiçbir zaman tehlikeye atılmaz.</p></div>
+                                    <div class="sub-box"><h5>Gerçek Kayıp Riski</h5><p>Maksimum 150 puanlık zarar kesme kuralıyla, bir işlemdeki riskiniz ana paranızın sadece %0.15'i (15$) kadardır.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 4: KURUMSAL ALTYAPI -->
+            <section data-transition="fade">
+                <div class="slide-internal-header">
+                    <div class="title-label">Kurumsal Altyapı</div>
+                    <div class="brand-meta">DOĞRUDAN MERKEZİ BAĞLANTI</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="title-wrap">
+                            <h1 class="gradient-text">ARACILARI KALDIRDI.</h1>
+                            <!-- Inline Modern Stroke Global/Server Icon -->
+                            <svg class="gear-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2 12H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 2C14.5013 4.73835 15.9228 8.29203 16 12C15.9228 15.708 14.5013 19.2616 12 22C9.49872 19.2616 8.07725 15.708 8 12C8.07725 8.29203 9.49872 4.73835 12 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Robot, dünyanın en büyük bankalarıyla aynı kaynaktan beslenir. Bu sayede en uygun <span class="highlight">fiyatlarla</span> ve hızla işlem yapar.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('hotspot', this)"><div class="v-num">01</div><h4>Doğrudan Erişim</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('teknik_not', this)"><div class="v-num">02</div><h4>Teknik Altyapı</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('guvenlik_altyapi', this)"><div class="v-num">03</div><h4>Süreklilik</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active">
+                            <div id="hotspot" class="detail-item active">
+                                <h3>Doğrudan Likidite Erişimi</h3>
+                                <span class="item-intro">Robot, dünyanın en büyük bankalarının ve fiyat sağlayıcılarının bulunduğu merkez havuzlara doğrudan bağlıdır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Aracısız Bağlantı</h5><p>Yerel aracılar yerine doğrudan küresel likidite havuzlarına bağlıdır; bu sayede emirler hiçbir gecikme olmadan doğrudan piyasa merkezine ulaşır.</p></div>
+                                    <div class="sub-box"><h5>En Dar Spread Avantajı</h5><p>Doğrudan bağlantı sayesinde alış-satış farkı (spread) minimum seviyeye iner; bu da işlemlerin kâra geçme süresini önemli ölçüde kısaltır.</p></div>
+                                    <div class="sub-box"><h5>Yüksek İşlem Derinliği</h5><p>Büyük hacimli işlemleri bile fiyatı kaydırmadan (slippage olmadan) milisaniyeler içinde gerçekleştirebilen profesyonel bir altyapıya sahiptir.</p></div>
+                                </div>
+                            </div>
+                            <div id="teknik_not" class="detail-item">
+                                <h3>Endüstriyel Sunucu Gücü</h3>
+                                <span class="item-intro">Robotun hızı, New York ve Londra'daki dev veri merkezlerinde barınan fiziksel sunucularından gelir.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>NY4 ve LD5 Merkezleri</h5><p>Dünya ticaretinin kalbi olan Equinix NY4 (New York) ve LD5 (Londra) merkezlerinde barınır; piyasa verilerine kaynağından ulaşır.</p></div>
+                                    <div class="sub-box"><h5>Milisaniye Altı Gecikme</h5><p>Fiyat sağlayıcılar ile aynı binada (co-location) bulunması sayesinde, emir iletim hızı 1 milisaniyenin altındaki teknik sınırları zorlar.</p></div>
+                                    <div class="sub-box"><h5>Fiber Optik İletişim</h5><p>Saniyede on binlerce fiyat verisini işleyebilen yüksek bant genişliği sayesinde, en yoğun piyasa anlarında bile takılma ve donma yaşamaz.</p></div>
+                                </div>
+                            </div>
+                            <div id="guvenlik_altyapi" class="detail-item">
+                                <h3>Sistem ve Veri Güvenliği</h3>
+                                <span class="item-intro">İşlemlerin sürekliliği ve güvenliği, kurumsal düzeydeki yedekleme protokolleri ile korunur.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Akıllı Kill-Switch</h5><p>Olağanüstü veri kesintilerinde veya teknik aksaklıklarda, robot tüm pozisyonları anında güvenli konuma alan otomatik koruma anahtarına sahiptir.</p></div>
+                                    <div class="sub-box"><h5>7/24 Kesintisizlik</h5><p>Yedekli enerji (UPS) ve yedekli internet hatları (Failover) sayesinde, sistem dünya genelindeki teknik arızalardan etkilenmeden çalışmaya devam eder.</p></div>
+                                    <div class="sub-box"><h5>Otonom Denetim</h5><p>Sistemin sağlığı ve bağlantı kalitesi yazılımsal olarak her saniye denetlenir; en küçük bir riskte robot otomatik olarak savunma moduna geçer.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 5: PERFORMANS METRİKLERİ -->
+            <section data-transition="fade">
+                <div class="slide-internal-header">
+                    <div class="title-label">Başarı Karnesi</div>
+                    <div class="brand-meta">HAFTALIK HEDEFLER</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="title-wrap">
+                            <h1 class="gradient-text">PLANLI İLERLEYİŞ.</h1>
+                            <!-- Inline Modern Stroke Bar Chart Icon -->
+                            <svg class="gear-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M18 20V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M12 20V4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M6 20V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Robot, rastgele değil, matematiksel bir plana dayanan haftalık <span class="highlight">kazanç hedefi</span> ile çalışır.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('frekans', this)"><div class="v-num">01</div><h4>İşlem Sayısı</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('verimlilik', this)"><div class="v-num">02</div><h4>Hedef Kâr</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('strateji', this)"><div class="v-num">03</div><h4>Strateji</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active">
+                            <div id="frekans" class="detail-item active">
+                                <h3>Nitelikli İşlem Seçimi</h3>
+                                <span class="item-intro">Robot, piyasadaki binlerce fırsatı tarar ancak sadece en yüksek güvenliğe sahip olanları işleme alır; nicelikten çok niteliğe odaklanır.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Filtrelenmiş Seçim</h5><p>Robot haftada ortalama 15-20 arası işlem açar; bu sayı, yüzlerce aday arasından en sıkı filtreleri geçen "en kaliteli" fırsatların süzülmesiyle oluşur.</p></div>
+                                    <div class="sub-box"><h5>Sabırlı Analiz</h5><p>Piyasanın aşırı dalgalı, belirsiz veya maliyetli (yüksek spread) olduğu anlarda robot sabırla bekler; sadece en net sinyallerde harekete geçer.</p></div>
+                                    <div class="sub-box"><h5>İstatistiksel Odak</h5><p>İşlem başına değil, haftalık genel toplama odaklanan ve rastgele işlemlerden kaçınan bir başarı stratejisi izler.</p></div>
+                                </div>
+                            </div>
+                            <div id="verimlilik" class="detail-item">
+                                <h3>Haftalık Hedef Projeksiyonu</h3>
+                                <span class="item-intro">Matematiksel modellerin sunduğu sürdürülebilir ve tutarlı bir finansal büyüme planı.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Sürdürülebilir Büyüme</h5><p>Haftalık %6 net kâr hedefi, rastgele bir rakam değil, uzun vadeli istatistiksel modellerin sunduğu gerçekçi bir başarı projeksiyonudur.</p></div>
+                                    <div class="sub-box"><h5>Dolar Bazlı Koruma</h5><p>Kazancınız dolar bazlı olduğu için, hem sermayenizin global değerini korur hem de yerel piyasa risklerinden bağımsız bir büyüme sağlar.</p></div>
+                                    <div class="sub-box"><h5>Bileşik Getiri Gücü</h5><p>Düzenli haftalık kazançlar, uzun vadede sermayenizin katlanarak artmasını sağlayan güçlü bir finansal motor işlevi görür.</p></div>
+                                </div>
+                            </div>
+                            <div id="strateji" class="detail-item">
+                                <h3>Hızlı ve Odaklı Strateji</h3>
+                                <span class="item-intro">Piyasadaki fırsatları saniyeler içinde kazanca çevirip riskli alandan uzaklaşan "Scalping" mantığı.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Hızlı Kâr Realizasyonu</h5><p>Robot, piyasada uzun süre kalmak yerine, hedeflenen kârı saniyeler içinde alıp riskli alandan uzaklaşmayı ve kasayı korumayı hedefler.</p></div>
+                                    <div class="sub-box"><h5>Minimum Risk Süresi</h5><p>İşlemler çok kısa sürelidir; böylece sermaye piyasa risklerine minimum sürede maruz kalır ve gecelik risklere girilmez.</p></div>
+                                    <div class="sub-box"><h5>Altın Uzmanlığı</h5><p>Sadece en likit ve hareketli olan altın piyasasına odaklanarak, her gün taze fırsatlarla nakit akışını canlı tutar.</p></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SLIDE 6: FİNAL - DOLAR KAZAN TL HARCA -->
+            <section data-transition="zoom">
+                <div class="slide-internal-header">
+                    <div class="title-label">Finansal Özgürlük</div>
+                    <div class="brand-meta">GLOBAL GELİR, YEREL KONFOR</div>
+                </div>
+                <div class="content-grid">
+                    <div class="title-area">
+                        <div style="width: 40px; height: 1px; background: var(--gold); margin-bottom: 30px;"></div>
+                        <div class="final-title-wrap">
+                            <h1 class="gradient-text">DOLAR KAZAN, <br>TL HARCA.</h1>
+                            <!-- Modern Aesthetic Coin-style Dollar Icon -->
+                            <svg class="dollar-icon-new" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+                                <path d="M12 6V18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                <path d="M15 8.5H10.5C9.67157 8.5 9 9.17157 9 10C9 10.8284 9.67157 11.5 10.5 11.5H13.5C14.3284 11.5 15 12.1716 15 13C15 13.8284 14.3284 14.5 13.5 14.5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <p class="description">Global piyasaların gücünü arkanıza alın. Enflasyona karşı en güçlü kalkanı kuşanın ve <span class="highlight">alım gücünüzü</span> Türkiye'de katlayın.</p>
+                        <div class="vertical-nav">
+                            <div class="v-nav-item active" onclick="toggleDetail('enflasyon_koruma', this)"><div class="v-num">01</div><h4>Enflasyon Koruması</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('alim_gucu_katla', this)"><div class="v-num">02</div><h4>Alım Gücü</h4></div>
+                            <div class="v-nav-item" onclick="toggleDetail('pasif_gelir_vizyon', this)"><div class="v-num">03</div><h4>Yaşam Kalitesi</h4></div>
+                        </div>
+                    </div>
+                    <div class="detail-area">
+                        <div class="detail-panel active" style="background: rgba(0, 40, 0, 0.2); border-color: rgba(0, 255, 0, 0.2);">
+                            <div id="enflasyon_koruma" class="detail-item active">
+                                <h3>Dolar Bazlı Zırh</h3>
+                                <span class="item-intro">Kazancınız dolar olduğu an, yerel enflasyon sizin için bir risk olmaktan çıkar.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Değer Saklama</h5><p>Sermayeniz dünyanın en geçerli para biriminde büyürken, birikimlerinizin alım gücü her gün korunur.</p></div>
+                                    <div class="sub-box"><h5>Global Güven</h5><p>Sadece yerel piyasalara bağlı kalmadan, tüm dünyanın yatırım yaptığı bir havuzdan pay alırsınız.</p></div>
+                                </div>
+                            </div>
+                            <div id="alim_gucu_katla" class="detail-item">
+                                <h3>Kur Farkı Avantajı</h3>
+                                <span class="item-intro">Global ölçekte kazandığınız her 1 Dolar, yerel pazarda size çok daha büyük bir konfor sağlar.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Alım Gücü Çarpanı</h5><p>Dolar bazlı haftalık %6 kâr, yerel kur farkıyla birleştiğinde Türkiye şartlarında çok daha yüksek bir refah seviyesi sunar.</p></div>
+                                    <div class="sub-box"><h5>Arbitraj Gücü</h5><p>Dünya piyasasındaki hızı ve teknolojiyi kullanarak, kazancınızı kendi hayatınıza en verimli şekilde aktarırsınız.</p></div>
+                                </div>
+                            </div>
+                            <div id="pasif_gelir_vizyon" class="detail-item">
+                                <h3>Zamanın Özgürlüğü</h3>
+                                <span class="item-intro">Robot sizin için 5 gün 24 saat çalışırken, siz sadece hayatın tadını çıkarırsınız.</span>
+                                <div class="sub-features">
+                                    <div class="sub-box"><h5>Gerçek Pasif Gelir</h5><p>Siz uyurken, tatildeyken veya sevdiklerinizle vakit geçirirken robot piyasayı süzmeye devam eder.</p></div>
+                                    <div class="sub-box"><h5>Gelecek İnşası</h5><p>Dolar kazanıp TL harcayarak, finansal hedeflerinize manuel bir çalışandan kat kat daha hızlı ulaşırsınız.</p></div>
+                                </div>
+                            </div>
+                            <!-- Sideways Trend Visual (SVG) -->
+                            <div class="sideways-chart">
+                                <img src="fxgrafik.svg" alt="Forex Chart">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script>
+        const isMobile = document.documentElement.classList.contains('is-mobile');
+
+        if (isMobile) {
+            // Reveal CSS yüklenmedi, sadece saf HTML/CSS
+        } else {
+            // MASAÜSTÜ: Reveal.js yükle
+            var s = document.createElement('script');
+            s.src = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.3.1/reveal.js';
+            s.onload = function() {
+                Reveal.initialize({
+                    width: 1920, height: 1080, margin: 0,
+                    minScale: 0.1, maxScale: 5.0,
+                    hash: true, center: true,
+                    transition: 'fade', mouseWheel: true,
+                    controls: false, progress: false
+                });
+                var dotNav = document.getElementById('dot-nav');
+                var progressLine = document.getElementById('dot-progress');
+                var totalSlides = document.querySelectorAll('.reveal .slides > section').length;
+                for (var i = 0; i < totalSlides; i++) {
+                    var dot = document.createElement('div');
+                    dot.className = 'dot' + (i === 0 ? ' active' : '');
+                    dot.onclick = (function(idx){ return function(){ Reveal.slide(idx); }; })(i);
+                    dotNav.appendChild(dot);
+                }
+                Reveal.on('slidechanged', function(event) {
+                    var dots = document.querySelectorAll('.dot');
+                    var idx = event.indexh;
+                    dots.forEach(function(dot, i) {
+                        dot.classList.remove('active', 'passed');
+                        if (i === idx) dot.classList.add('active');
+                        else if (i < idx) dot.classList.add('passed');
+                    });
+                    progressLine.style.height = (idx / (totalSlides - 1) * 100) + '%';
+                });
+            };
+            document.head.appendChild(s);
+        }
+
+        function toggleDetail(id, element) {
+            var container = element.closest('section');
+            container.querySelectorAll('.detail-item').forEach(function(i){ i.classList.remove('active'); });
+            container.querySelectorAll('.v-nav-item').forEach(function(i){ i.classList.remove('active'); });
+            element.classList.add('active');
+            var target = document.getElementById(id);
+            if (target) target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
