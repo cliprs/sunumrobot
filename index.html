@@ -81,7 +81,7 @@
 
         .vertical-nav { display: flex; flex-direction: column; gap: 15px; max-width: 320px; }
         .v-nav-item { display: flex; align-items: center; gap: 20px; cursor: pointer; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.05); opacity: 0.3; transition: all 0.3s ease; }
-        .v-nav-item:hover { opacity: 0.8; padding-left: 10px; }
+        .v-nav-item:hover { opacity: 0.8; }
         .v-nav-item.active { opacity: 1; border-bottom: 1px solid var(--gold); }
         .v-num { font-size: 10px; color: var(--gold); font-weight: 800; border: 1px solid var(--gold); width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
         .v-nav-item h4 { margin: 0 !important; font-size: 16px !important; letter-spacing: 3px !important; text-transform: uppercase !important; font-weight: 300 !important; color: #fff; }
@@ -138,7 +138,7 @@
         }
         .sub-box:hover {
             border-left-color: var(--gold);
-            padding-left: 35px;
+            padding-left: 25px;
             background: rgba(197, 160, 89, 0.05);
         }
         .step-label { position: absolute; left: -20px; top: 0; writing-mode: vertical-rl; transform: rotate(180deg); color: var(--gold); font-size: 10px; letter-spacing: 2px; font-weight: 800; opacity: 0.6; white-space: nowrap; }
@@ -185,9 +185,11 @@
             scroll-snap-stop: always !important;
             overflow: hidden !important;
             position: relative !important;
-            background: var(--bg-dark) !important;
+            background: transparent !important;
             justify-content: flex-start !important;
         }
+
+        html.is-mobile .bg-layer { opacity: 0.15; z-index: -1; }
 
         html.is-mobile .side-bar,
         html.is-mobile .dot-nav { display: none !important; }
@@ -357,7 +359,6 @@
         html.is-mobile .sideways-chart img { object-position: center bottom; transform: scale(1.5); transform-origin: center bottom; }
         html.is-mobile .final-title-wrap { display: flex; align-items: center; }
         html.is-mobile .highlight { color: var(--highlight-color); font-weight: 600; }
-        html.is-mobile .bg-layer { display: none; }
     </style>
 </head>
 <body>
@@ -403,17 +404,17 @@
                                 <h3>Zeki Yatırım Mantığı</h3>
                                 <span class="item-intro">Altın fiyatlarındaki dalgalanmanın yönünü "enerji patlamasıyla" tespit eden bir sistem.</span>
                                 <div class="sub-features">
-                                    <div class="sub-box"><h5>Hareket Onayı</h5><p>Geleceği görmez; ancak 1 saniyede 100 puanlık bir sıçrama olduğunda, bu hareketin devam edeceğini milisaniyeler içinde anlar ve işleme girer.</p></div>
+                                    <div class="sub-box"><h5>Hareket Onayı</h5><p>Geleceği görmez; ancak 1 saniyede 100 puanlık bir sıçrama olduğunda, bu hareketin devam edeceğini anlık olarak tespit eder ve işleme girer.</p></div>
                                     <div class="sub-box"><h5>Veri Analizi</h5><p>Binlerce veriyi saniyeler içinde süzerek sadece kazanma ihtimali en yüksek anları seçer (Faiz oranı kararları, tarım dışı istihdam, enflasyon verileri gibi önemli gelişmeleri takip eder).</p></div>
-                                    <div class="sub-box"><h5>Hızlı Karar</h5><p>Dalga henüz başındayken milisaniyeler içinde işlemi başlatır ve kârı alıp çıkar.</p></div>
+                                    <div class="sub-box"><h5>Hızlı Karar</h5><p>Dalga henüz başındayken vakit kaybetmeden işlemi başlatır ve kârı alıp çıkar.</p></div>
                                 </div>
                             </div>
                             <div id="hiz_vizyon" class="detail-item">
                                 <h3>Hızın Teknik Üstünlüğü</h3>
-                                <span class="item-intro">Finansal piyasalarda milisaniyeler, binlerce dolarlık fırsatın yakalanması veya kaçırılması arasındaki tek farktır.</span>
+                                <span class="item-intro">Finansal piyasalarda zamanın en küçük dilimleri, binlerce dolarlık fırsatın yakalanması veya kaçırılması arasındaki tek farktır.</span>
                                 <div class="sub-features">
                                     <div class="sub-box"><h5>Milisaniyelik Üstünlük</h5><p>İnsan beyninin bir hareketi algılayıp tepki vermesi yaklaşık 250 milisaniye sürerken, robotumuz bu süreci 1 milisaniyenin altında tamamlar; yani siz daha ne olduğunu anlamadan o işlemi bitirmiş olur.</p></div>
-                                    <div class="sub-box"><h5>Fiyat Kaçırmama Gücü</h5><p>Haber anındaki sert sıçramalarda fiyatlar çok hızlı değişir; robot, hedef fiyatı ekranda gördüğü an milisaniyeler içinde emir ileterek en avantajlı noktadan giriş yapar.</p></div>
+                                    <div class="sub-box"><h5>Fiyat Kaçırmama Gücü</h5><p>Haber anındaki sert sıçramalarda fiyatlar çok hızlı değişir; robot, hedef fiyatı ekranda gördüğü an yüksek bir hızla emir ileterek en avantajlı noktadan giriş yapar.</p></div>
                                     <div class="sub-box"><h5>Anlık Onay ve Giriş</h5><p>Veri merkezlerine doğrudan bağlı altyapısı sayesinde, piyasa onayı ile işlem girişi arasında hiçbir gecikme yaşanmaz; bu da stratejinin başarısını garanti altına alır.</p></div>
                                 </div>
                             </div>
@@ -422,8 +423,8 @@
                                 <span class="item-intro">Yatırımcıların en büyük düşmanı olan "duygular", robotumuzun sisteminde yer almaz.</span>
                                 <div class="sub-features">
                                     <div class="sub-box"><h5>Sıfır Duygusal Hata</h5><p>Robot korkmaz, heyecanlanmaz ve hırsa kapılmaz; piyasa ne kadar kaotik olursa olsun, sadece önceden tanımlanmış matematiksel modele %100 sadık kalır.</p></div>
-                                    <div class="sub-box"><h5>Kesintisiz Gözlem (7/24)</h5><p>İnsan yorulur, uyur ve dikkati dağılır; ancak bu sistem, piyasa açık olduğu her saniye aynı yüksek konsantrasyonla binlerce veriyi analiz etmeye devam eder.</p></div>
-                                    <div class="sub-box"><h5>Matematiksel Sadakat</h5><p>Sistem, piyasada oluşabilecek "belki döner" veya "biraz daha bekleyelim" gibi insani yanılgılara düşmeden, kural neyse onu milisaniyeler içinde hatasız uygular.</p></div>
+                                    <div class="sub-box"><h5>Kesintisiz Gözlem (5/24)</h5><p>İnsan yorulur, uyur ve dikkati dağılır; ancak bu sistem, piyasa açık olduğu her saniye aynı yüksek konsantrasyonla binlerce veriyi analiz etmeye devam eder.</p></div>
+                                    <div class="sub-box"><h5>Matematiksel Sadakat</h5><p>Sistem, piyasada oluşabilecek "belki döner" veya "biraz daha bekleyelim" gibi insani yanılgılara düşmeden, kural neyse onu hiç tereddüt etmeden hatasız uygular.</p></div>
                                 </div>
                             </div>
                         </div>
@@ -469,7 +470,7 @@
                                 <h3>Neden Altın (XAU/USD)?</h3>
                                 <span class="item-intro">Altın, hem dünyanın en güvenli limanı hem de robotumuzun ihtiyaç duyduğu en yüksek volatiliteyi sunan eşsiz bir enstrümandır.</span>
                                 <div class="sub-features">
-                                    <div class="sub-box"><h5>Küresel Likidite Gücü</h5><p>Dünyanın en likit varlıklarından biri olduğu için, milisaniyeler içinde çok büyük miktarlarda alım-satım yapılmasına imkan tanır; bu da hızlı giriş-çıkış stratejimiz için kusursuzdur.</p></div>
+                                    <div class="sub-box"><h5>Küresel Likidite Gücü</h5><p>Dünyanın en likit varlıklarından biri olduğu için, anlık olarak çok büyük miktarlarda alım-satım yapılmasına imkan tanır; bu da hızlı giriş-çıkış stratejimiz için kusursuzdur.</p></div>
                                     <div class="sub-box"><h5>Sürekli Hareket Alanı</h5><p>Altın piyasası, haber akışlarına ve ekonomik verilere en hızlı tepki veren piyasadır; robotun kazanç üretmek için ihtiyaç duyduğu "dikey hareketler" en çok bu alanda oluşur.</p></div>
                                     <div class="sub-box"><h5>Düşük Spread Avantajı</h5><p>İşlem hacminin yüksekliği sayesinde alış-satış farkı (spread) çok dardır; bu da robotun kâra geçme süresini kısaltan en önemli maliyet avantajıdır.</p></div>
                                 </div>
@@ -479,7 +480,7 @@
                                 <span class="item-intro">Robot, manuel bir operatörün asla ulaşamayacağı bir "kusursuz uygulama" disipliniyle çalışır.</span>
                                 <div class="sub-features">
                                     <div class="sub-box"><h5>Sıfır Sapma Prensibi</h5><p>Hedeflenen fiyat görüldüğü milisaniye içinde emir iletilir; manuel işlemlerdeki "geç kalma" veya "fiyat kaçırma" riskleri bu sistemde tamamen ortadan kalkar.</p></div>
-                                    <div class="sub-box"><h5>Hızlı Emir İletimi</h5><p>New York ve Londra'daki veri merkezlerine doğrudan bağlı olması sayesinde, işlemler doğrudan piyasanın kalbine milisaniye altı hızla ulaştırılır.</p></div>
+                                    <div class="sub-box"><h5>Hızlı Emir İletimi</h5><p>New York ve Londra'daki veri merkezlerine doğrudan bağlı olması sayesinde, işlemler doğrudan piyasanın kalbine en yüksek hızla ulaştırılır.</p></div>
                                     <div class="sub-box"><h5>Mükemmel Zamanlama</h5><p>Sinyal oluştuğu an girer, hedef kâr noktasına ulaştığı an saniyeler içinde kârı realize edip kenara çekilir; vaktini piyasada risk altında geçirmez.</p></div>
                                 </div>
                             </div>
@@ -516,11 +517,11 @@
                         <div class="detail-panel active">
                             <div id="stop_loss" class="detail-item active">
                                 <h3>Kesin Zarar Sınırı</h3>
-                                <span class="item-intro">Her işlemin, açıldığı milisaniye ile birlikte tanımlanan aşılmaz bir "koruma kalkanı" vardır.</span>
+                                <span class="item-intro">Her işlemin, açıldığı an ile birlikte tanımlanan aşılmaz bir "koruma kalkanı" vardır.</span>
                                 <div class="sub-features">
                                     <div class="sub-box"><h5>150 Puan Sabit Stop-Loss</h5><p>Piyasa ne kadar sert hareket ederse etsin, robot bir işlemde 150 puandan fazla zarar edilmesine asla izin vermez ve işlemi o noktada kesin olarak kapatır.</p></div>
                                     <div class="sub-box"><h5>Sermaye Koruma Kalkanı</h5><p>Beklenmedik piyasa şoklarında veya sert düşüşlerde, bakiyenizin büyük bir kısmını kaybetme riskini tamamen ortadan kaldıran bir emniyet sibobudur.</p></div>
-                                    <div class="sub-box"><h5>Duygusuz Müdahale</h5><p>İnsanların "belki döner" diyerek yaptığı bekleyiş hatasına robot asla düşmez; kural neyse milisaniyeler içinde onu uygular.</p></div>
+                                    <div class="sub-box"><h5>Duygusuz Müdahale</h5><p>İnsanların "belki döner" diyerek yaptığı bekleyiş hatasına robot asla düşmez; kural neyse vakit kaybetmeden onu uygular.</p></div>
                                 </div>
                             </div>
                             <div id="trailing" class="detail-item">
@@ -682,7 +683,7 @@
                                 <path d="M15 8.5H10.5C9.67157 8.5 9 9.17157 9 10C9 10.8284 9.67157 11.5 10.5 11.5H13.5C14.3284 11.5 15 12.1716 15 13C15 13.8284 14.3284 14.5 13.5 14.5H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
                             </svg>
                         </div>
-                        <p class="description">Global piyasaların gücünü arkanıza alın. Enflasyona karşı en güçlü kalkanı kuşanın ve <span class="highlight">alım gücünüzü</span> Türkiye'de katlayın.</p>
+                        <p class="description">Global piyasaların gücünü arkanıza alın. Enflasyona karşı en güçlü kalkanı kuşanın ve <span class="highlight">alım gücünüzü</span> yaşadığınız coğrafyada katlayın.</p>
                         <div class="vertical-nav">
                             <div class="v-nav-item active" onclick="toggleDetail('enflasyon_koruma', this)"><div class="v-num">01</div><h4>Enflasyon Koruması</h4></div>
                             <div class="v-nav-item" onclick="toggleDetail('alim_gucu_katla', this)"><div class="v-num">02</div><h4>Alım Gücü</h4></div>
@@ -696,14 +697,14 @@
                                 <span class="item-intro">Kazancınız dolar olduğu an, yerel enflasyon sizin için bir risk olmaktan çıkar.</span>
                                 <div class="sub-features">
                                     <div class="sub-box"><h5>Değer Saklama</h5><p>Sermayeniz dünyanın en geçerli para biriminde büyürken, birikimlerinizin alım gücü her gün korunur.</p></div>
-                                    <div class="sub-box"><h5>Global Güven</h5><p>Sadece yerel piyasalara bağlı kalmadan, tüm dünyanın yatırım yaptığı bir havuzdan pay alırsınız.</p></div>
+                                    <div class="sub-box"><h5>Global Güven</h5><p>Sadece yerel piyasalara bağlı kalmadan, tüm dünyanın yatırım yaptığı bir havuzdan pay alırsınız Gorduğunuz coğrafyadan bağımsızlaşın.</p></div>
                                 </div>
                             </div>
                             <div id="alim_gucu_katla" class="detail-item">
                                 <h3>Kur Farkı Avantajı</h3>
                                 <span class="item-intro">Global ölçekte kazandığınız her 1 Dolar, yerel pazarda size çok daha büyük bir konfor sağlar.</span>
                                 <div class="sub-features">
-                                    <div class="sub-box"><h5>Alım Gücü Çarpanı</h5><p>Dolar bazlı haftalık %6 kâr, yerel kur farkıyla birleştiğinde Türkiye şartlarında çok daha yüksek bir refah seviyesi sunar.</p></div>
+                                    <div class="sub-box"><h5>Alım Gücü Çarpanı</h5><p>Dolar bazlı haftalık %6 kâr, yerel kur farkıyla birleştiğinde yerel yaşam maliyetleri karşısında çok daha yüksek bir refah seviyesi sunar.</p></div>
                                     <div class="sub-box"><h5>Arbitraj Gücü</h5><p>Dünya piyasasındaki hızı ve teknolojiyi kullanarak, kazancınızı kendi hayatınıza en verimli şekilde aktarırsınız.</p></div>
                                 </div>
                             </div>
